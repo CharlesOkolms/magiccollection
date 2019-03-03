@@ -1,0 +1,29 @@
+:root{
+    --structure-left-width:20%;
+    --structure-right-width:20%;
+}
+
+
+#left, #right, #middle{
+    display:block;
+    position:absolute;
+    top:0;
+    bottom:0;
+    z-index:0;
+}
+
+#left{
+    left:0;
+    width:var(--structure-left-width);
+    background:rgba(200,0,0,0.1);
+}
+#right{
+    right:0;
+    width:var(--structure-right-width);
+    background:rgba(0,0,200,0.1);
+}
+#middle{
+    width:60%;
+    left: var(--structure-left-width);
+    background:rgba(0,200,0,0.1);
+}
