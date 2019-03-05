@@ -9,30 +9,31 @@ final class Scryfall
 	 * @param      $name
 	 * @param bool $isExact
 	 *
-	 * @return Card
+	 * @return array
 	 * @throws AppException
 	 */
-	public static function getCard(string $name, ?bool $isExact = true) {
+	public static function getCard(string $name, bool $isExact = true) :array {
 
 		$param = ($isExact) ? 'exact' : 'fuzzy';
 
 		$info = self::apiCall([$param => $name]);
 
-		return new Card([]);
+		return $info;
 
 	}
 
 
-	private static final const SCRYFALL_CARD_EXACT_SEARCH = 1;
+	private const SCRYFALL_CARD_EXACT_SEARCH = 1;
+	private const SCRYFALL_CARD_FUZZY_SEARCH = 2;
 
 	/**
 	 * @param     $data
 	 * @param int $mode
 	 *
-	 * @return mixed
+	 * @return array
 	 * @throws AppException
 	 */
-	private static function apiCall(array $data, int $mode = Scryfall::SCRYFALL_CARD_EXACT_SEARCH) {
+	private static function apiCall(array $data, int $mode = Scryfall::SCRYFALL_CARD_EXACT_SEARCH): array {
 
 		switch ($mode) {
 			case Scryfall::SCRYFALL_CARD_EXACT_SEARCH :
@@ -49,7 +50,7 @@ final class Scryfall
 		$result = curl_exec($ch); // runs the post
 		curl_close($ch);
 
-		return $result;
+		return json_decode($result, true);
 	}
 
 }
