@@ -7,26 +7,28 @@ spl_autoload_register(function ($class_name) {
 	require_once __DIR__ . '/class/' . $class_name . '.class.php';
 });
 
-foreach ( glob(__DIR__."lib/*.php") as $filename ) {
-	/** @noinspection PhpIncludeInspection */
-	require_once $filename;
-}
+require_once __DIR__.'/lib/functions_core.lib.php';
+require_once __DIR__.'/lib/functions_misc.lib.php';
 
 
 /** @var array $args POST data. */
 $action = 'action' . ucfirst($args['action']);
+$args = $args['data'];
 
 sendResponse($action($args));
 
 /**
  * @param array $args
+ *
+ * @return array
+ * @throws AppException
  */
-function actionGetCard($args) {
-
-	$name = $args['card']['name'];
+function actionGetCard(array $args) {
+	$name = $args['name'];
 
 	$card = Card::getCard($name);
 
+return $card->toArray();
 }
 
 

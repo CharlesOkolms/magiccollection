@@ -2,7 +2,7 @@ function init() {
 	ws({
 		action: 'getCard',
 		data:{
-			'name' : 'Pariah'
+			'name' : 'Fog'
 		}
 	}).done(function(response){
 		console.log(response);
@@ -10,4 +10,4 @@ function init() {
 }
 
 
-// init();
+init();

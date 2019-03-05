@@ -1,6 +1,6 @@
 <?php
 
-class Card
+class Card implements JsonSerializable
 {
 	private $id;
 	private $multiverseId;
@@ -16,9 +16,13 @@ class Card
 	private $price;
 	private $lastUpdated;
 
-
-	function __construct($obj) {
-
+	/**
+	 * Card constructor.
+	 *
+	 * @param array $obj
+	 */
+	function __construct(array $obj) {
+		$this->set($obj);
 	}
 
 	/**
@@ -27,11 +31,31 @@ class Card
 	 * @return Card|null
 	 * @throws AppException
 	 */
-	public static function getCard($name): ?Card {
+	public static function getCard(string $name): ?Card {
 		$data = DB::get()->query('SELECT * FROM card WHERE name_eng = :name', ['name' => $name]);
+		$card = null;
 		if (count($data) === 1) {
 			$card = new self($data[0]);
 		}
+		else if (count($data) === 0) {
+			$info = Scryfall::getCard($name);
+
+			$card = new Card(['colors'       => $info['colors'],
+							  'price'        => $info['prices']['eur'],
+							  'scryfallId'   => $info['id'],
+							  'multiverseId' => implode(',', $info['multiverse_ids']),
+							  'imgUrl'       => $info['image_uris']['normal'],
+							  'cost'         => $info['mana_cost'],
+							  'nameEng'      => $info['name'],
+							  'rarity'       => $info['rarity'],
+							  'set'          => $info['set'],
+							  'setName'      => $info['set_name']]);
+		}
+//		else if (count($data) > 1) {
+//			// todo
+//		}
+
+
 		return $card;
 	}
 
@@ -71,7 +95,7 @@ class Card
 	/**
 	 * @param string $multiverseId
 	 */
-	public function setMultiverseId(string $multiverseId): void {
+	public function setMultiverseId(?string $multiverseId): void {
 		$this->multiverseId = $multiverseId;
 	}
 
@@ -228,5 +252,24 @@ class Card
 	public function setLastUpdated(string $lastUpdated): void {
 		$this->lastUpdated = $lastUpdated;
 	}
+
+	/**
+	 * Specify data which should be serialized to JSON
+	 *
+	 * @link http://php.net/manual/en/jsonserializable.jsonserialize.php
+	 * @return mixed data which can be serialized by <b>json_encode</b>,
+	 * which is a value of any type other than a resource.
+	 * @since 5.4.0
+	 */
+	public function jsonSerialize() {
+		return get_object_vars($this);
+	}
+
+	public function toArray() {
+		return get_object_vars($this);
+	}
+
+
+
 
 }

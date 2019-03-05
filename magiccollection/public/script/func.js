@@ -16,7 +16,7 @@ function ws(param) {
 	if (!param.action || param.data === undefined) {
 		return false;
 	}
-	return $.ajax({
+	return $.post({
 		url: 'ws.php',
 		data: {
 			'action': param.action,
