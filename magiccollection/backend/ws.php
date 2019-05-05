@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__.'/conf/database_access.conf.php';
+require_once __DIR__ . '/conf/database_access.conf.php';
 
 spl_autoload_register(function ($class_name) {
 	/** @noinspection PhpIncludeInspection */
@@ -28,7 +28,7 @@ function actionGetCard(array $args) {
 
 	$card = Card::getCard($name);
 
-return $card->toArray();
+	return $card->toArray();
 }
 
 

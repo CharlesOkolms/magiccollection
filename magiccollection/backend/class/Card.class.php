@@ -59,6 +59,11 @@ class Card implements JsonSerializable
 		return $card;
 	}
 
+	/**
+	 * Set all properties of the Card object with the ones defined in the array parameter.
+	 *
+	 * @param array $data
+	 */
 	private function set(array $data) {
 		foreach ($data as $property => $value) {
 			switch ($property) {

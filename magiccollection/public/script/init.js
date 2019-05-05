@@ -26,9 +26,7 @@ function init() {
 				'name': 'Fog'
 			}
 		}).done(function (response) {
-			console.log(response);
 			let cardArray = mtgCardObjectToArray(response);
-			console.log(cardArray);
 			table.row.add(cardArray).draw(false);
 		});
 	});
@@ -51,7 +49,7 @@ function mtgCardObjectToArray(card){
 }
 
 function mtgReplaceManaSymbols(str){
-	
+
 }
 
 

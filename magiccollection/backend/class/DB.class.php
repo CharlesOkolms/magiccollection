@@ -18,14 +18,10 @@ class DB
 	 */
 	const DATETIME_FORMAT = 'Y-m-d H:i:s';
 
-	/**
-	 * @var string Date format as in the database (same as date in ISO-8601)
-	 */
+	/** @var string Date format as in the database (same as date in ISO-8601) */
 	const DATE_FORMAT = 'Y-m-d';
 
-	/**
-	 * DataBase instance constructor.
-	 */
+	/** DataBase instance constructor. */
 	private function __construct() {
 		try {
 			$this->_db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PWD);
@@ -35,9 +31,7 @@ class DB
 		}
 	}
 
-	/**
-	 * DataBase destructor.
-	 */
+	/** DataBase destructor. */
 	public function __destruct() {
 		self::$_instance = null;
 	}
@@ -58,9 +52,7 @@ class DB
 	/**
 	 * Use a prepared statement to execute a SELECT query and returns the result fetched as specified, defaults to an
 	 * associative array
-	 *
 	 * Example :
-	 *
 	 * $usersList = DataBase::getInstance()->query('SELECT * FROM user WHERE id = :id', [':id'=>12], PDO::FETCH_ASSOC);
 	 *
 	 * @param string $sql SQL SELECT query string to be executed.
@@ -168,3 +160,7 @@ class DB
 		return $this->getPDO()->lastInsertId();
 	}
 }
+
+
+class DBException extends Exception
+{
