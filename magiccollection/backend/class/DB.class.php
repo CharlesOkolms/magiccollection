@@ -24,11 +24,14 @@ class DB
 	/** DataBase instance constructor.
 	 *
 	 * @throws DBException
+	 * @throws Exception
 	 */
 	private function __construct() {
 		try {
-			$this->_db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASSWORD);
-			$this->action('SET CHARACTER SET utf8;');
+			$this->_db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASSWORD, [
+				PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
+			]);
+			DB::pdo()->exec('SET CHARACTER SET utf8;');
 		} catch (Exception $e) {
 			throw new DBException('DataBase connection error : ' . $e->getMessage(), null, $e);
 		}
@@ -40,21 +43,26 @@ class DB
 	}
 
 	/**
-	 * Singleton (une seule et unique instance PDO pour tout le script) donc on doit retrouver l'instance à utiliser
+	 * Get singleton instance of DB class.
 	 *
-	 * @return DB : L'instance de la classe DataBase. (on ne peut instancier qu'une seule fois cette classe)
+	 * @return DB The only one instance of DB class.
+	 * @throws Exception
 	 */
 	public static function get(): DB {
-		if (is_null(self::$_instance)) {
-			self::$_instance = new self();
+		try {
+			if (empty(self::$_instance)) {
+				self::$_instance = new self();
+			}
+			return self::$_instance;
+		} catch (Exception $e) {
+			throw $e;
 		}
-		return self::$_instance;
 	}
 
 
 	/**
-	 * Use a prepared statement to execute a SELECT query and returns the result fetched as specified, defaults to an
-	 * associative array
+	 * Use a prepared statement to execute a SELECT query and returns the result fetched as specified (defaults to an
+	 * associative array)
 	 * Example :
 	 * $usersList = DataBase::getInstance()->query('SELECT * FROM user WHERE id = :id', [':id'=>12], PDO::FETCH_ASSOC);
 	 *
@@ -63,9 +71,9 @@ class DB
 	 * @param int    $fetchmode PDO fetch mode. Defaults to PDO::FETCH_ASSOC.
 	 *
 	 * @return array
+	 * @throws DBException
 	 * @author charlesokolms
 	 * @since  0.1
-	 * @throws AppException
 	 */
 	public function query(string $sql, ?array $values = null, ?int $fetchmode = PDO::FETCH_ASSOC): array {
 		$values    = $values ?? [];
@@ -76,29 +84,19 @@ class DB
 		$result = $statement->fetchAll($fetchmode);
 
 		if (!is_array($result)) {
-			if ($this->throwsExceptions()) {
-				throw new AppException(json_encode($this->getPDO()->errorInfo(), true));
-			}
-			else {
-				return $this->getPDO()->errorInfo();
-			}
+			throw new DBException('SQL Query failed.', $this->getPDO()->errorInfo());
 		}
 		return $result;
 	}
 
 	/**
-	 * Permet de préparer et executer une requete SQL de manipulation de données et, en cas d'erreur, d'en récupérer
-	 * les informations.
+	 * Prepare and execute a SQL statement manipulating data. Throws DBException on error.
 	 *
-	 * @param string     $sql Requête SQL (autre que SELECT) à executer, avec des points d'interrogation "?" ou
-	 *                           des
-	 *                           variables nommées ":nomvariable" si besoin de variable dans la requête.
-	 * @param array|null $values Contient les valeurs à attribuer aux inconnues de la requête SQL. En cas d'utilisation
-	 *                           des "?", le tableau contient simplement les valeurs sans index particulier.
+	 * @param string     $sql Non-select SQL statement to be executed.
+	 * @param array|null $values Values of parameters. Parameters can be named or not.
 	 *
-	 * @return mixed             Retourne les informations de l'erreur dans le cas où une erreur survient, le dernier id
-	 *                           inséré pour un INSERT ou le nombre de lignes affectées pour un UPDATE ou encore FALSE
-	 *                           si la requete n'est ni un INSERT ni un UPDATE.
+	 * @return mixed             The last inserted id and the row count.
+	 * @throws DBException
 	 */
 	public function action(string $sql, ?array $values = null) {
 		$sql  = trim($sql);
@@ -112,22 +110,43 @@ class DB
 				break;
 		}
 
-		$pdostatement = $this->getPDO()->prepare($sql);
-		$executed     = $pdostatement->execute($values);
-		if (!$executed) {
-			return $pdostatement->errorInfo(); // si execute renvoie false, on retourne les erreurs MySQL
-		}
+		try {
+			$pdostatement = $this->getPDO()->prepare($sql);
+			$executed     = $pdostatement->execute($values);
+			if (!$executed) {
+				throw new DBException('SQL Action failed', $pdostatement->errorInfo());
+			}
 
-		switch ($type) {
-			case 'INSERT':
-				return self::get()->lastInsertId(); // si c'était un INSERT, on retourne le dernier id inséré
-				break;
-			case 'UPDATE':
-				return $pdostatement->rowCount(); // si c'était un UPDATE, on retourne le nombre de lignes affectées
-				break;
-			default:
-				return true;
-				break;
+			return [
+				'success'      => true,
+				'lastInsertId' => self::get()->lastInsertId(),
+				'rowCount'     => $pdostatement->rowCount()
+			];
+		} catch (DBException $dbE) {
+			throw $dbE;
+		} catch (PDOException $pdoE) {
+			throw new DBException('An error has occurred with PDO.', null, $pdoE);
+		} catch (Exception $e) {
+			throw new DBException('An error has occurred.', null, $e);
+		}
+	}
+
+
+	/**
+	 * @param string     $sql
+	 * @param array|null $values
+	 * @param int|null   $fetchmode
+	 *
+	 * @return array
+	 * @throws DBException
+	 */
+	public static function select(string $sql, ?array $values = null, ?int $fetchmode = PDO::FETCH_ASSOC): array {
+		try {
+			return self::get()->query($sql, $values, $fetchmode);
+		} catch (DBException $e) {
+			throw $e;
+		} catch (Exception $e) {
+			throw new DBException('Error : ' . $e->getMessage(), [], $e);
 		}
 	}
 
@@ -152,6 +171,15 @@ class DB
 	}
 
 	/**
+	 * @return PDO
+	 * @throws Exception
+	 */
+	public static function pdo(){
+		return self::get()->getPDO();
+	}
+
+
+	/**
 	 * Retourne le dernier id que l'on a inséré en base de données par le biais de cette connexion.
 	 *
 	 * @return string : Le dernier id enregistré dans la base de données par cette connexion PDO.
@@ -160,7 +188,6 @@ class DB
 		return $this->getPDO()->lastInsertId();
 	}
 }
-
 
 
 class DBException extends Exception
@@ -177,11 +204,12 @@ class DBException extends Exception
 	 */
 	public function __construct(string $message, ?array $errors = [], Throwable $previous = null) {
 		parent::__construct($message, 12, $previous);
-		$this->$this->databaseError = $errors ?? [];
+		$this->databaseError = $errors ?? [];
 	}
 
 	/**
 	 * Magic Method toString().
+	 *
 	 * @return string
 	 */
 	public function __toString() {
@@ -190,10 +218,10 @@ class DBException extends Exception
 	}
 
 	/**
-	 * @uses Utils
 	 * @return string
+	 * @uses Utils
 	 */
-	public function getStackTrace(){
+	public function getStackTrace() {
 		return Utils::jTraceEx($this);
 	}
 }

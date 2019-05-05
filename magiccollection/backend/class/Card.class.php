@@ -30,10 +30,11 @@ class Card implements JsonSerializable
 	 * @param null|string $set
 	 *
 	 * @return Card|null
-	 * @throws AppException
+	 * @throws DBException
+	 * @throws Exception
 	 */
 	public static function getCard(string $name, ?string $set = null): ?Card {
-		$set = $set ?? '%';
+		$set  = $set ?? '%';
 		$data = DB::get()->query('SELECT * FROM card WHERE name_eng = :name AND `set` LIKE :set', ['name' => $name, 'set' => $set]);
 		$card = null;
 		if (count($data) === 1) {
@@ -276,8 +277,6 @@ class Card implements JsonSerializable
 	public function toArray() {
 		return get_object_vars($this);
 	}
-
-
 
 
 }

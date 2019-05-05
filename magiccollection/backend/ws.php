@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/conf/app.conf.php';
 require_once __DIR__ . '/conf/database_access.conf.php';
 
 spl_autoload_register(function ($class_name) {
@@ -15,13 +16,20 @@ require_once __DIR__.'/lib/functions_misc.lib.php';
 $action = 'action' . ucfirst($args['action']);
 $args = $args['data'];
 
-sendResponse($action($args));
+try{
+	sendResponse($action($args));
+}catch(Exception $e){
+	var_dump($e);
+//	echo json_encode(['success' => false,
+//					  'debug' => Utils::jTraceEx($e)]);
+	die();
+}
 
 /**
  * @param array $args
  *
  * @return array
- * @throws AppException
+ * @throws Exception
  */
 function actionGetCard(array $args) {
 	$name = $args['name'];

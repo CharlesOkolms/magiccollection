@@ -14,6 +14,9 @@ class Utils {
 	 * @return string
 	 */
 	public static function jTraceEx($e, $seen = null) {
+		if(PROD){
+			return '';
+		}
 		$starter = $seen ? 'Caused by: ' : '';
 		$result  = [];
 		if (!$seen) {
@@ -57,5 +60,15 @@ class Utils {
 		return $result;
 	}
 
+
+	/**
+	 * @param string $property Property name
+	 * @param string $mode 'set' or 'get'.
+	 *
+	 * @return mixed
+	 */
+	public static function stringToGetSet(string $property, string $mode){
+		return str_replace('_', '', ucwords($property, '_'));
+	}
 
 }

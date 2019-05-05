@@ -14,24 +14,21 @@ final class Scryfall
 	 * @param null|string $set
 	 *
 	 * @return array
-	 * @throws AppException
+	 * @throws Exception
 	 */
-	public static function getCard(string $name, bool $isExact = true, ?string $set = null) :array {
-
+	public static function getCard(string $name, bool $isExact = true, ?string $set = null): array {
 		$precision = ($isExact) ? 'exact' : 'fuzzy';
 
 		$parameters = [
 			$precision => $name
 		];
 
-		if($set !== null){
+		if ($set !== null) {
 			$parameters['set'] = strval($set);
 		}
-
 		$info = self::apiCall($parameters);
 
 		return $info;
-
 	}
 
 

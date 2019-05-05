@@ -2,9 +2,9 @@
 
 
 /** Send the response object in a JSON string with echo and terminates the processus.
- * @param array $resp
+ * @param array $a
  */
-function sendResponse(array $resp){
-	echo json_encode($resp,true);
+function sendResponse(array $a){
+	echo json_encode($a,true);
 	die();
 }
