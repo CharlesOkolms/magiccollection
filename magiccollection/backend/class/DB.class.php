@@ -3,8 +3,9 @@
 /**
  * Singleton class using PDO prepared statements through static methods.
  *
- * @since 0.1
- * @author charlesokolms
+ * @version 0.3.2
+ * @author  charlesokolms
+ * @todo Accessibilité statique plutôt que/en plus de méthodique ? ; uniformiser et généraliser retours ; finir traduction ;
  */
 class DB
 {
@@ -13,21 +14,23 @@ class DB
 	/** @var $_db PDO The PDO object used by the singleton */
 	private $_db;
 
-	/**
-	 * @var string Datetime format as used in the database (ISO-8601 simplified)
-	 */
+
+	/** @var string Datetime format as used in the database (ISO-8601 simplified) */
 	const DATETIME_FORMAT = 'Y-m-d H:i:s';
 
 	/** @var string Date format as in the database (same as date in ISO-8601) */
 	const DATE_FORMAT = 'Y-m-d';
 
-	/** DataBase instance constructor. */
+	/** DataBase instance constructor.
+	 *
+	 * @throws DBException
+	 */
 	private function __construct() {
 		try {
-			$this->_db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PWD);
+			$this->_db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASSWORD);
+			$this->action('SET CHARACTER SET utf8;');
 		} catch (Exception $e) {
-			echo 'DataBase connection error : ' . $e->getMessage() . '<br />';
-			echo '#' . $e->getCode();
+			throw new DBException('DataBase connection error : ' . $e->getMessage(), null, $e);
 		}
 	}
 
@@ -61,10 +64,10 @@ class DB
 	 *
 	 * @return array
 	 * @author charlesokolms
-	 * @since 0.1
+	 * @since  0.1
 	 * @throws AppException
 	 */
-	public function query(string $sql, ?array $values, ?int $fetchmode = PDO::FETCH_ASSOC): array {
+	public function query(string $sql, ?array $values = null, ?int $fetchmode = PDO::FETCH_ASSOC): array {
 		$values    = $values ?? [];
 		$fetchmode = $fetchmode ?? PDO::FETCH_ASSOC;
 
@@ -73,7 +76,12 @@ class DB
 		$result = $statement->fetchAll($fetchmode);
 
 		if (!is_array($result)) {
-			throw new AppException(json_encode($this->getPDO()->errorInfo(), true));
+			if ($this->throwsExceptions()) {
+				throw new AppException(json_encode($this->getPDO()->errorInfo(), true));
+			}
+			else {
+				return $this->getPDO()->errorInfo();
+			}
 		}
 		return $result;
 	}
@@ -82,16 +90,17 @@ class DB
 	 * Permet de préparer et executer une requete SQL de manipulation de données et, en cas d'erreur, d'en récupérer
 	 * les informations.
 	 *
-	 * @param string $sql : Requête SQL (autre que SELECT) à executer, avec des points d'interrogation "?" ou des
-	 *                       variables nommées ":nomvariable" si besoin de variable dans la requête.
-	 * @param array  $values : Contient les valeurs à attribuer aux inconnues de la requête SQL. En cas d'utilisation
-	 *                       des "?", le tableau contient simplement les valeurs sans index particulier.
+	 * @param string     $sql Requête SQL (autre que SELECT) à executer, avec des points d'interrogation "?" ou
+	 *                           des
+	 *                           variables nommées ":nomvariable" si besoin de variable dans la requête.
+	 * @param array|null $values Contient les valeurs à attribuer aux inconnues de la requête SQL. En cas d'utilisation
+	 *                           des "?", le tableau contient simplement les valeurs sans index particulier.
 	 *
-	 * @return mixed         : Retourne les informations de l'erreur dans le cas où une erreur survient, le dernier id
-	 *                       inséré pour un INSERT ou le nombre de lignes affectées pour un UPDATE ou encore FALSE si
-	 *                       la requete n'est ni un INSERT ni un UPDATE.
+	 * @return mixed             Retourne les informations de l'erreur dans le cas où une erreur survient, le dernier id
+	 *                           inséré pour un INSERT ou le nombre de lignes affectées pour un UPDATE ou encore FALSE
+	 *                           si la requete n'est ni un INSERT ni un UPDATE.
 	 */
-	public function action(string $sql, array $values) {
+	public function action(string $sql, ?array $values = null) {
 		$sql  = trim($sql);
 		$type = strtoupper(substr($sql, 0, 6));
 
@@ -99,8 +108,7 @@ class DB
 			case 'INSERT':
 			case 'UPDATE':
 				break;
-			default: // si ce n'est ni un update ni un insert on annule l'action et on retourne false
-				return false;
+			default:
 				break;
 		}
 
@@ -123,30 +131,22 @@ class DB
 		}
 	}
 
-	/**
-	 * @return bool TRUE en cas de succès, FALSE sinon.
-	 */
+	/** @return bool TRUE en cas de succès, FALSE sinon. */
 	public function beginTransaction(): bool {
 		return $this->getPDO()->beginTransaction();
 	}
 
-	/**
-	 * @return bool TRUE en cas de succès, FALSE sinon.
-	 */
+	/** @return bool TRUE en cas de succès, FALSE sinon. */
 	public function commit(): bool {
 		return $this->getPDO()->commit();
 	}
 
-	/**
-	 * @return bool TRUE en cas de succès, FALSE sinon.
-	 */
+	/** @return bool TRUE en cas de succès, FALSE sinon. */
 	public function rollback(): bool {
 		return $this->getPDO()->rollback();
 	}
 
-	/**
-	 * @return PDO : L'objet de connexion PDO
-	 */
+	/** @return PDO : L'objet de connexion PDO */
 	public function getPDO() {
 		return $this->_db;
 	}
@@ -162,5 +162,38 @@ class DB
 }
 
 
+
 class DBException extends Exception
 {
+
+	protected $databaseError;
+
+	/**
+	 * DBException constructor.
+	 *
+	 * @param string    $message short explanation about what happened.
+	 * @param array     $errors [optional] what PDO returns in case of error.
+	 * @param Throwable $previous [optional] the previous Exception in case you want to get the error stack trace.
+	 */
+	public function __construct(string $message, ?array $errors = [], Throwable $previous = null) {
+		parent::__construct($message, 12, $previous);
+		$this->$this->databaseError = $errors ?? [];
+	}
+
+	/**
+	 * Magic Method toString().
+	 * @return string
+	 */
+	public function __toString() {
+		$errors = print_r($this->databaseError, true);
+		return __CLASS__ . ": [{$this->code}]: {$this->message} - {$errors}\n";
+	}
+
+	/**
+	 * @uses Utils
+	 * @return string
+	 */
+	public function getStackTrace(){
+		return Utils::jTraceEx($this);
+	}
+}

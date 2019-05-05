@@ -3,6 +3,9 @@
     --structure-right-width:20%;
 }
 
+*{
+    font-family:verdana,arial,sans-serif;
+}
 
 #left, #right, #middle{
     display:block;

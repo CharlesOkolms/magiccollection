@@ -108,3 +108,33 @@ function remove_accents($string) {
 	$string = strtr($string, $chars);
 	return $string;
 }
+
+
+/**
+* Applique strpos() sur tous les éléments $needles donnés. Fonctionne comme strpos mais avec des arrays.
+* @param string $haystack Chaine à trouver
+* @param string|array $needles Chaine(s) dans le(s)quelle(s) chercher
+*
+* @return int|bool Renvoie la position de la première occurrence de $haystack dans la 1ère chaine $needle le contenant
+* source : " akarmenia at gmail dot com " on http://php.net/manual/fr/function.strpos.php
+*/
+function strpos_array($haystack, $needles) {
+	if ( is_array($needles) ) {
+		foreach ($needles as $str) {
+			if ( is_array($str) ) { //si array dans array needle, decompose
+				$pos = strpos_array($haystack, $str);
+			} else {
+				$pos = strpos($haystack, $str);
+			}
+			if ($pos !== false) {
+				return $pos;
+			}
+		}
+		return false; // partie importante ajoutée
+	}
+	else {  // fonction strpos normale si le needle n'est pas un tableau
+		return strpos($haystack, $needles);
+	}
+}
+
+

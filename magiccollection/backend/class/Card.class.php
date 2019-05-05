@@ -2,19 +2,19 @@
 
 class Card implements JsonSerializable
 {
-	private $id;
-	private $multiverseId;
-	private $scryfallId;
-	private $nameEng;
-	private $names = ['fra' => '', 'eng' => ''];
-	private $set;
-	private $setName;
-	private $rarity;
-	private $cost;
-	private $colors;
-	private $imgUrl;
-	private $price;
-	private $lastUpdated;
+	protected $id;
+	protected $multiverseId;
+	protected $scryfallId;
+	protected $nameEng;
+	protected $names = ['fra' => '', 'eng' => ''];
+	protected $set;
+	protected $setName;
+	protected $rarity;
+	protected $cost;
+	protected $colors;
+	protected $imgUrl;
+	protected $price;
+	protected $lastUpdated;
 
 	/**
 	 * Card constructor.
@@ -26,13 +26,15 @@ class Card implements JsonSerializable
 	}
 
 	/**
-	 * @param $name
+	 * @param string      $name
+	 * @param null|string $set
 	 *
 	 * @return Card|null
 	 * @throws AppException
 	 */
-	public static function getCard(string $name): ?Card {
-		$data = DB::get()->query('SELECT * FROM card WHERE name_eng = :name', ['name' => $name]);
+	public static function getCard(string $name, ?string $set = null): ?Card {
+		$set = $set ?? '%';
+		$data = DB::get()->query('SELECT * FROM card WHERE name_eng = :name AND `set` LIKE :set', ['name' => $name, 'set' => $set]);
 		$card = null;
 		if (count($data) === 1) {
 			$card = new self($data[0]);
@@ -50,6 +52,7 @@ class Card implements JsonSerializable
 							  'rarity'       => $info['rarity'],
 							  'set'          => $info['set'],
 							  'setName'      => $info['set_name']]);
+
 		}
 //		else if (count($data) > 1) {
 //			// todo

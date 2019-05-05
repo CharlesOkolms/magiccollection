@@ -1,22 +1,34 @@
 <?php
 
 
+/**
+ * @version 0.1
+ */
 final class Scryfall
 {
 
 
 	/**
-	 * @param      $name
-	 * @param bool $isExact
+	 * @param string      $name
+	 * @param bool        $isExact
+	 * @param null|string $set
 	 *
 	 * @return array
 	 * @throws AppException
 	 */
-	public static function getCard(string $name, bool $isExact = true) :array {
+	public static function getCard(string $name, bool $isExact = true, ?string $set = null) :array {
 
-		$param = ($isExact) ? 'exact' : 'fuzzy';
+		$precision = ($isExact) ? 'exact' : 'fuzzy';
 
-		$info = self::apiCall([$param => $name]);
+		$parameters = [
+			$precision => $name
+		];
+
+		if($set !== null){
+			$parameters['set'] = strval($set);
+		}
+
+		$info = self::apiCall($parameters);
 
 		return $info;
 

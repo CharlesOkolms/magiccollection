@@ -6,9 +6,7 @@
 class AppException extends Exception
 {
 
-	public function __construct($message, $code = 0, Exception $previous = null) {
-		// traiter le cas d'une erreur BDD avec array ici ou dans DataBase ?
-
+	public function __construct($message, $code = 10, Exception $previous = null) {
 		parent::__construct($message, $code, $previous);
 	}
 
@@ -21,4 +19,11 @@ class AppException extends Exception
 		return __CLASS__ . ": [{$this->code}]: {$this->message}\n";
 	}
 
+	/**
+	 * @uses Utils
+	 * @return string
+	 */
+	public function getStackTrace(){
+		return Utils::jTraceEx($this);
+	}
 }
