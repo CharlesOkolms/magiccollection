@@ -21,23 +21,31 @@ function init() {
 		});
 
 		ws({
-			action: 'getCard',
+			action: 'getCardsList',
 			data: {
-				'name': 'Fog'
+
 			}
 		}).done(function (response) {
-			let cardArray = mtgCardObjectToArray(response);
-			table.row.add(cardArray).draw(false);
+			console.log(response.data);
+			let data = [];
+			for(let i in response.data){
+				data.push(mtgCardObjectToArray(response.data[i]));
+			}
+			table.rows.add(data).draw(false);
 		});
 	});
 
 }
 
 
-
+/**
+ *
+ * @param card
+ * @returns {*[]}
+ */
 function mtgCardObjectToArray(card){
 	return [
-		card.lastUpdated || '',
+		card.lastUpdate || '',
 		card.multiverseId,
 		card.nameEng,
 		card.nameFra || '',

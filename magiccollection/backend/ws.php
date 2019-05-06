@@ -14,14 +14,13 @@ require_once __DIR__.'/lib/functions_misc.lib.php';
 
 /** @var array $args POST data. */
 $action = 'action' . ucfirst($args['action']);
-$args = $args['data'];
+$args = $args['data'] ?? [];
 
 try{
 	sendResponse($action($args));
 }catch(Exception $e){
-	var_dump($e);
-//	echo json_encode(['success' => false,
-//					  'debug' => Utils::jTraceEx($e)]);
+	echo json_encode(['success' => false,
+					  'debug' => Utils::jTraceEx($e)]);
 	die();
 }
 
@@ -37,6 +36,26 @@ function actionGetCard(array $args) {
 	$card = Card::getCard($name);
 
 	return $card->toArray();
+}
+
+/**
+ * @param array $args
+ *
+ * @return array
+ * @throws Exception
+ */
+function actionGetCardsList(array $args = []) {
+	$cards = Card::getAll();
+
+	$list = [];
+	foreach($cards as $k => $card){
+		$list[] = $card->toArray();
+	}
+
+	return [
+		'success' => true,
+		'data' => $list
+	];
 }
 
 

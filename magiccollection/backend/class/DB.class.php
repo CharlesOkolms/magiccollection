@@ -31,7 +31,7 @@ class DB
 			$this->_db = new PDO('mysql:host=' . DB_HOST . ';dbname=' . DB_NAME, DB_USER, DB_PASSWORD, [
 				PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
 			]);
-			DB::pdo()->exec('SET CHARACTER SET utf8;');
+			$this->_db->exec('SET CHARACTER SET utf8;');
 		} catch (Exception $e) {
 			throw new DBException('DataBase connection error : ' . $e->getMessage(), null, $e);
 		}

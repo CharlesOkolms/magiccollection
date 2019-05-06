@@ -14,7 +14,9 @@ class Card implements JsonSerializable
 	protected $colors;
 	protected $imgUrl;
 	protected $price;
-	protected $lastUpdated;
+	protected $lastUpdate;
+	protected $quantity;
+
 
 	/**
 	 * Card constructor.
@@ -63,6 +65,23 @@ class Card implements JsonSerializable
 		return $card;
 	}
 
+
+	/**
+	 * Get the list of all cards stored in database.
+	 *
+	 * @return Card[]
+	 * @throws DBException
+	 */
+	public static function getAll(): array {
+		$sql   = 'SELECT * FROM card';
+		$list  = DB::select($sql);
+		$cards = [];
+
+		foreach ($list as $k => $cardRow) {
+			$cards[] = new self($cardRow);
+		}
+		return $cards;
+	}
 	/**
 	 * Set all properties of the Card object with the ones defined in the array parameter.
 	 *
@@ -79,6 +98,7 @@ class Card implements JsonSerializable
 		}
 	}
 
+	#region setters getters
 
 	/**
 	 * @return int
@@ -133,8 +153,24 @@ class Card implements JsonSerializable
 	 * @param string $nameEng
 	 */
 	public function setNameEng(string $nameEng): void {
-		$this->nameEng = $nameEng;
+		$this->nameEng      = $nameEng;
+		$this->names['eng'] = strval($nameEng);
 	}
+
+	/**
+	 * @param string $name
+	 */
+	public function setNameFra(string $name): void {
+		$this->names['fra'] = strval($name);
+	}
+
+	/**
+	 * @return string
+	 */
+	public function getNameFra(): ?string {
+		return $this->names['fra'];
+	}
+
 
 	/**
 	 * @return array
@@ -207,16 +243,29 @@ class Card implements JsonSerializable
 	}
 
 	/**
-	 * @return array
+	 * @param bool $asString
+	 *
+	 * @return array|string
 	 */
-	public function getColors(): ?array {
-		return $this->colors;
+	public function getColors(bool $asString = false) {
+		return ($asString) ? implode(',', $this->colors) : $this->colors;
 	}
 
 	/**
-	 * @param array $colors
+	 * @param array|string $colors Array of letters representing colors or comma separated letters in string.
+	 *
+	 * @throws AppException
 	 */
-	public function setColors(array $colors): void {
+	public function setColors($colors): void {
+		if (is_string($colors)) {
+			$colors = explode(',', $colors);
+		}
+		foreach ($colors as $k => $letter) {
+			$colors[$k] = strval($letter);
+			if (in_array($letter, ['W', 'U', 'B', 'R', 'G'])) {
+				throw new AppException('Incorrect letter ' . $letter . ' for colors of card.');
+			}
+		}
 		$this->colors = $colors;
 	}
 
@@ -242,25 +291,55 @@ class Card implements JsonSerializable
 	}
 
 	/**
-	 * @param float $price
+	 * @param float|string $price
+	 *
+	 * @throws AppException
 	 */
-	public function setPrice(float $price): void {
+	public function setPrice($price): void {
+		$price = floatval($price);
+		if ($price === 0) {
+			$price = null;
+		}
+		else if ($price < 0) {
+			throw new AppException('Inconsistent price (' . $price . ') of card', AppException::LOGIC_ERROR);
+		}
 		$this->price = $price;
 	}
 
 	/**
 	 * @return string
 	 */
-	public function getLastUpdated(): ?string {
-		return $this->lastUpdated;
+	public function getLastUpdate(): ?string {
+		return $this->lastUpdate;
 	}
 
 	/**
-	 * @param string $lastUpdated
+	 * @param string $lastUpdate
 	 */
-	public function setLastUpdated(string $lastUpdated): void {
-		$this->lastUpdated = $lastUpdated;
+	public function setLastUpdate(string $lastUpdate): void {
+		if($lastUpdate === '0000-00-00 00:00:00'){
+			$lastUpdate = null;
+		}
+		$this->lastUpdate = $lastUpdate;
 	}
+
+	/**
+	 * @return mixed
+	 */
+	public function getQuantity() {
+		return $this->quantity;
+	}
+
+	/**
+	 * @param mixed $quantity
+	 */
+	public function setQuantity($quantity): void {
+		$qt             = intval($quantity);
+		$this->quantity = $qt;
+	}
+
+
+	#endregion get/set
 
 	/**
 	 * Specify data which should be serialized to JSON
@@ -274,6 +353,9 @@ class Card implements JsonSerializable
 		return get_object_vars($this);
 	}
 
+	/**
+	 * @return array
+	 */
 	public function toArray() {
 		return get_object_vars($this);
 	}

@@ -1,7 +1,7 @@
 <?php
 
 ?>
-<html>
+<html lang="fr-FR">
 <head>
 
     <title>CharlesOkolms' site</title>
@@ -23,11 +23,14 @@
     <script type="text/javascript" src="script/init.js"></script>
 
 </head>
-<body id="body">
+<body id="site">
+
+<div id="header">
+</div>
 <div id="left">
 </div>
 <div id="middle">
-    <table style="width:100%;" id="cardslist" class="dt-responsive stripe order-column hover compact">
+    <table id="cardslist" class="dt-responsive stripe order-column hover compact">
         <thead>
         <tr>
             <!--Note : class="not-visible-col" rend la colonne invisible dans le rendu DataTables (JS),

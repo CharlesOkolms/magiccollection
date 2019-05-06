@@ -6,7 +6,10 @@
 class AppException extends Exception
 {
 
-	public function __construct($message, $code = 10, Exception $previous = null) {
+	const LOGIC_ERROR = 11;
+	const UNKNOWN = 10;
+
+	public function __construct($message, $code = self::UNKNOWN, Exception $previous = null) {
 		parent::__construct($message, $code, $previous);
 	}
 
