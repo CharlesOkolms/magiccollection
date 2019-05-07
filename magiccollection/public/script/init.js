@@ -1,8 +1,26 @@
 function init() {
-
 	let table;
 
 	$(document).ready(function () {
+		$('#refreshValues').on('click', function(e){
+			ws({
+				action: 'cardsInfo',
+				data: {
+
+				}
+			}).done(function (response) {
+				let data = [];
+				for(let i in response.data){
+
+					response.data[i].cost = mtgReplaceManaSymbols(response.data[i].cost);
+					data.push(mtgCardObjectToArray(response.data[i]));
+				}
+				table.clear();
+				table.rows.add(data).draw(false);
+			});
+		});
+
+
 		console.log('hello');
 		table = $('#cardslist').DataTable({
 			"columns": [
@@ -29,6 +47,7 @@ function init() {
 			console.log(response.data);
 			let data = [];
 			for(let i in response.data){
+				response.data[i].cost = mtgReplaceManaSymbols(response.data[i].cost);
 				data.push(mtgCardObjectToArray(response.data[i]));
 			}
 			table.rows.add(data).draw(false);
@@ -56,9 +75,7 @@ function mtgCardObjectToArray(card){
 	];
 }
 
-function mtgReplaceManaSymbols(str){
 
-}
 
 
 init();

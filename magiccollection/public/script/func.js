@@ -25,3 +25,7 @@ function ws(param) {
 		dataType: 'json'
 	});
 }
+
+function mtgReplaceManaSymbols(str){
+	return str.replace(/{(.*?)}/g, "<i class=\"ms ms-cost ms-$1\"></i>").replace('ms-T', 'ms-tap');
+}

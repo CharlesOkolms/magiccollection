@@ -68,7 +68,7 @@ class Utils {
 	 * @return mixed
 	 */
 	public static function stringToGetSet(string $property, string $mode){
-		return str_replace('_', '', ucwords($property, '_'));
+		return $mode.str_replace('_', '', ucwords($property, '_'));
 	}
 
 }

@@ -41,8 +41,7 @@ class Card implements JsonSerializable
 		$card = null;
 		if (count($data) === 1) {
 			$card = new self($data[0]);
-		}
-		else if (count($data) === 0) {
+		} else if (count($data) === 0) {
 			$info = Scryfall::getCard($name);
 
 			$card = new Card(['colors'       => $info['colors'],
@@ -65,15 +64,51 @@ class Card implements JsonSerializable
 		return $card;
 	}
 
+	const API_SCRYFALL = 1;
+
+
+	/**
+	 * @param int $api
+	 *
+	 * @throws Exception
+	 */
+	public function searchCardInfo(int $api = self::API_SCRYFALL) {
+		switch ($api) {
+			case self::API_SCRYFALL:
+				{
+					$info = Scryfall::getCard($this->getNameEng(), true, $this->getSet());
+					$this->set(['colors'       => $info['colors'] ?? $info['card_faces'][0]['colors'],
+								'price'        => $info['prices']['eur'],
+								'scryfallId'   => $info['id'],
+								'multiverseId' => implode(',', $info['multiverse_ids']),
+								'imgUrl'       => $info['image_uris']['normal'] ?? $info['card_faces'][0]['image_uris']['normal'],
+								'cost'         => $info['mana_cost'] ?? $info['card_faces'][0]['mana_cost'],
+								'nameEng'      => trim(explode('\\\\', $info['name'])[0]), // it's \\
+								'rarity'       => $info['rarity'],
+								'set'          => $info['set'],
+								'setName'      => $info['set_name']]);
+					$this->save();
+					break;
+				}
+		}
+	}
 
 	/**
 	 * Get the list of all cards stored in database.
 	 *
+	 * @param $filters
+	 *
 	 * @return Card[]
 	 * @throws DBException
 	 */
-	public static function getAll(): array {
-		$sql   = 'SELECT * FROM card';
+	public static function getAll(?array $filters = []): array {
+		$w = '';
+		if (!empty($filters)) {
+			foreach ($filters as $k => $filter) {
+				$w .= ' AND ' . $filter['column'] . $filter['sign'] . $filter['value'];
+			}
+		}
+		$sql   = 'SELECT * FROM card WHERE `set` <> ""'.$w; //todo remove : leonin
 		$list  = DB::select($sql);
 		$cards = [];
 
@@ -82,6 +117,52 @@ class Card implements JsonSerializable
 		}
 		return $cards;
 	}
+
+
+	/**
+	 * Saves the card object in database. If the card is present with the same multiverse_id, it is updated. Else, it
+	 * is inserted.
+	 *
+	 * @throws Exception
+	 */
+	function save() {
+		$sql = 'INSERT INTO card (multiverse_id, scryfall_id, name_eng, name_fra, `set`, set_name, rarity, cost, colors, img_url, price, quantity)
+				VALUES (:multiverse_id, :scryfall_id, :name_eng, :name_fra, :set, :set_name, :rarity, :cost, :colors, :img_url, :price, 1)
+				ON DUPLICATE KEY 
+				    UPDATE  multiverse_id=:multiverse_id, scryfall_id=:scryfall_id, 
+				           name_eng=:name_eng, name_fra=:name_fra, `set`=:set, set_name=:set_name, 
+				           rarity=:rarity, cost=:cost, colors=:colors, img_url=:img_url, price=:price;';
+
+		$values = [
+			'multiverse_id' => null,
+			'scryfall_id'   => null,
+			'name_eng'      => null,
+			'name_fra'      => null,
+			'set'           => null,
+			'set_name'      => null,
+			'rarity'        => null,
+			'cost'          => null,
+			'colors'        => null,
+			'img_url'       => null,
+			'price'         => null
+		];
+
+		foreach ($values as $property => $value) {
+			$getter = Utils::stringToGetSet($property, 'get');
+			if ($property === 'colors') {
+				$values[$property] = $this->{$getter}(true); //asString
+			} else {
+				$values[$property] = $this->{$getter}();
+			}
+
+		}
+
+		$req = DB::get()->action($sql, $values);
+
+		return $req;
+	}
+
+
 	/**
 	 * Set all properties of the Card object with the ones defined in the array parameter.
 	 *
@@ -118,13 +199,13 @@ class Card implements JsonSerializable
 	 * @return int|null
 	 */
 	public function getMultiverseId(): ?int {
-		return $this->multiverseId;
+		return intval($this->multiverseId);
 	}
 
 	/**
 	 * @param string $multiverseId
 	 */
-	public function setMultiverseId(?string $multiverseId): void {
+	public function setMultiverseId($multiverseId): void {
 		$this->multiverseId = $multiverseId;
 	}
 
@@ -238,7 +319,7 @@ class Card implements JsonSerializable
 	/**
 	 * @param string $cost
 	 */
-	public function setCost(string $cost): void {
+	public function setCost(?string $cost): void {
 		$this->cost = $cost;
 	}
 
@@ -248,7 +329,8 @@ class Card implements JsonSerializable
 	 * @return array|string
 	 */
 	public function getColors(bool $asString = false) {
-		return ($asString) ? implode(',', $this->colors) : $this->colors;
+
+		return ($asString && $this->colors !== null) ? implode(',', $this->colors) : $this->colors;
 	}
 
 	/**
@@ -259,12 +341,18 @@ class Card implements JsonSerializable
 	public function setColors($colors): void {
 		if (is_string($colors)) {
 			$colors = explode(',', $colors);
+		} else if (!is_array($colors)) {
+			$this->colors = null;
+			return;
 		}
 		foreach ($colors as $k => $letter) {
 			$colors[$k] = strval($letter);
-			if (in_array($letter, ['W', 'U', 'B', 'R', 'G'])) {
+			if ($letter !== '' && !in_array($letter, ['W', 'U', 'B', 'R', 'G'])) {
 				throw new AppException('Incorrect letter ' . $letter . ' for colors of card.');
 			}
+		}
+		if ($colors === ['']) {
+			$colors = null;
 		}
 		$this->colors = $colors;
 	}
@@ -279,7 +367,7 @@ class Card implements JsonSerializable
 	/**
 	 * @param string $imgUrl
 	 */
-	public function setImgUrl(string $imgUrl): void {
+	public function setImgUrl(?string $imgUrl): void {
 		$this->imgUrl = $imgUrl;
 	}
 
@@ -299,8 +387,7 @@ class Card implements JsonSerializable
 		$price = floatval($price);
 		if ($price === 0) {
 			$price = null;
-		}
-		else if ($price < 0) {
+		} else if ($price < 0) {
 			throw new AppException('Inconsistent price (' . $price . ') of card', AppException::LOGIC_ERROR);
 		}
 		$this->price = $price;
@@ -317,7 +404,7 @@ class Card implements JsonSerializable
 	 * @param string $lastUpdate
 	 */
 	public function setLastUpdate(string $lastUpdate): void {
-		if($lastUpdate === '0000-00-00 00:00:00'){
+		if ($lastUpdate === '0000-00-00 00:00:00') {
 			$lastUpdate = null;
 		}
 		$this->lastUpdate = $lastUpdate;

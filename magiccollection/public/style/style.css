@@ -1,8 +1,9 @@
 :root {
     /*--structure-left-width:20%;*/
     /*--structure-right-width:20%;*/
+    --color-main-background: #efefef;
     --color-header: #333;
-    --color-menu: #eee;
+    --color-menu: #ddd;
     --color-menu-border: #444;
 }
 
@@ -50,7 +51,7 @@
 #middle {
     grid-column-start: 2;
     grid-column-end: 3;
-    background: rgba(0, 200, 0, 0.1);
+    background: var(--color-main-background);
     padding: 15px;
     max-height:100%;
     overflow:auto;

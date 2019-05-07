@@ -58,5 +58,32 @@ function actionGetCardsList(array $args = []) {
 	];
 }
 
+/**
+ * @param array $args
+ *
+ * @return array
+ * @throws DBException
+ * @throws Exception
+ */
+function actionCardsInfo(array $args = []){
+	$cards = Card::getAll([['column' => 'multiverse_id', 'sign' => ' IS', 'value' => ' NULL']]);
+
+	$list = [];
+	foreach($cards as $k => $card){
+		$card->searchCardInfo();
+	}
+	$cards = Card::getAll();
+
+
+	$list = [];
+	foreach($cards as $k => $card){
+		$list[] = $card->toArray();
+	}
+
+	return [
+		'success' => true,
+		'data' => $list
+	];
+}
 
 
